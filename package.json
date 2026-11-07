@@ -1,0 +1,43 @@
+{
+  "name": "rumbela-games",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Rumbela Games — Adaptive Learning Platform for Rumbela Bimbel",
+  "scripts": {
+    "dev": "vite",
+    "start": "vite preview",
+    "build": "vite build",
+    "preview": "vite preview",
+    "clean": "rm -rf dist",
+    "lint": "tsc --noEmit",
+    "seed": "tsx scripts/seed.ts",
+    "test": "tsx scripts/test-engine.ts"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "4.3.4",
+    "@types/canvas-confetti": "^1.9.0",
+    "@types/three": "^0.187.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "canvas-confetti": "^1.9.4",
+    "dotenv": "^17.2.3",
+    "firebase": "^13.2.0",
+    "lucide-react": "^0.546.0",
+    "motion": "^12.23.24",
+    "react": "^19.0.1",
+    "react-dom": "^19.0.1",
+    "three": "^0.187.0",
+    "vite": "^8.3.0"
+  },
+  "devDependencies": {
+    "@types/dotenv": "^6.1.1",
+    "@types/node": "^22.14.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "autoprefixer": "^10.4.21",
+    "esbuild": "^0.27.0",
+    "tailwindcss": "4.3.4",
+    "tsx": "^4.21.0",
+    "typescript": "^7.0.2"
+  }
+}

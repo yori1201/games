@@ -1,0 +1,154 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ============================================================
+    // Helper: validate ID format (alphanumeric + dash + underscore, max 128 chars)
+    // ============================================================
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // ============================================================
+    // Helper: caller is authenticated (has UID)
+    // ============================================================
+    function isAuthed() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    // ============================================================
+    // Helper: caller is admin (read from students/{uid}.role)
+    // Note: Firestore rules cannot read other docs synchronously,
+    // so admin role is determined by a custom claim OR by reading
+    // the student doc whose ID equals the caller's UID.
+    // ============================================================
+    function isCallerAdmin() {
+      return isAuthed() &&
+        exists(/databases/$(database)/documents/students/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/students/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isCallerTutorOrAdmin() {
+      return isAuthed() &&
+        exists(/databases/$(database)/documents/students/$(request.auth.uid)) &&
+        (get(/databases/$(database)/documents/students/$(request.auth.uid)).data.role in ['tutor', 'admin']);
+    }
+
+    // ============================================================
+    // students/{studentId}
+    // - Anyone authenticated can READ student profiles (tutor needs roster, student needs own profile)
+    // - A student can WRITE only their OWN profile, and cannot escalate their own role
+    // - Admins can write any student profile
+    // ============================================================
+    match /students/{studentId} {
+      allow read: if isAuthed() && isValidId(studentId);
+
+      allow create: if isAuthed()
+        && isValidId(studentId)
+        && request.auth.uid == studentId
+        && request.resource.data.accessCode is string
+        && request.resource.data.accessCode.size() <= 64
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() <= 64
+        // Role must be 'student' for self-registration; tutors/admins can only be seeded server-side
+        && request.resource.data.role == 'student';
+
+      allow update: if isAuthed()
+        && isValidId(studentId)
+        && (
+          // Self-update: student can update their own profile fields EXCEPT role
+          (request.auth.uid == studentId
+            && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'accessCode']))
+          // Admin can update anyone
+          || isCallerAdmin()
+        );
+
+      allow delete: if isCallerAdmin();
+    }
+
+    // ============================================================
+    // access_codes/{code}
+    // - Read: only authenticated users (they need to look up codes at login)
+    // - Write: admin only (admin generates invite codes)
+    // ============================================================
+    match /access_codes/{codeId} {
+      allow read: if isAuthed();
+      allow create, update, delete: if isCallerAdmin();
+    }
+
+    // ============================================================
+    // student_progress/{progressId}
+    // - Format: {studentId}_{subjectCode}_{levelNumber}
+    // - Read: the student themselves, or tutor/admin
+    // - Write: the student themselves (for their own progress), or tutor/admin
+    // ============================================================
+    match /student_progress/{progressId} {
+      allow read: if isAuthed()
+        && isValidId(progressId)
+        && (
+          resource.data.studentId == request.auth.uid
+          || isCallerTutorOrAdmin()
+        );
+
+      allow create: if isAuthed()
+        && isValidId(progressId)
+        && request.resource.data.studentId == request.auth.uid
+        && request.resource.data.status in ['LOCKED', 'AVAILABLE', 'IN_PROGRESS', 'MASTERED'];
+
+      allow update: if isAuthed()
+        && isValidId(progressId)
+        && (
+          // Student can update their own progress
+          (resource.data.studentId == request.auth.uid
+            && request.resource.data.status in ['LOCKED', 'AVAILABLE', 'IN_PROGRESS', 'MASTERED'])
+          // Tutor/Admin can override (manual unlock feature)
+          || isCallerTutorOrAdmin()
+        );
+
+      allow delete: if isCallerAdmin();
+    }
+
+    // ============================================================
+    // game_sessions/{sessionId}
+    // - Read: the student themselves, or tutor/admin
+    // - Create: any authenticated user (for their own session)
+    // - Update/Delete: admin only (audit trail integrity)
+    // ============================================================
+    match /game_sessions/{sessionId} {
+      allow read: if isAuthed()
+        && (
+          resource.data.studentId == request.auth.uid
+          || isCallerTutorOrAdmin()
+        );
+
+      allow create: if isAuthed()
+        && request.resource.data.studentId == request.auth.uid;
+
+      allow update, delete: if isCallerAdmin();
+    }
+
+    // ============================================================
+    // answer_attempts/{attemptId}
+    // - Read: the student themselves, or tutor/admin
+    // - Create: any authenticated user (for their own attempt)
+    // - Update/Delete: never (audit log)
+    // ============================================================
+    match /answer_attempts/{attemptId} {
+      allow read: if isAuthed()
+        && (
+          resource.data.studentId == request.auth.uid
+          || isCallerTutorOrAdmin()
+        );
+
+      allow create: if isAuthed()
+        && request.resource.data.studentId == request.auth.uid;
+
+      allow update, delete: if false;
+    }
+  }
+}

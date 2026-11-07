@@ -1,0 +1,97 @@
+{
+  "entities": {
+    "Student": {
+      "title": "Student",
+      "description": "Student user profile and progress summary",
+      "type": "object",
+      "properties": {
+        "accessCode": { "type": "string", "maxLength": 32 },
+        "displayName": { "type": "string", "maxLength": 64 },
+        "educationStage": { "type": "string", "enum": ["PAUD", "TK", "SD", "SMP", "SMA"] },
+        "gradeCode": { "type": "string", "maxLength": 16 },
+        "avatarKey": { "type": "string", "maxLength": 32 },
+        "xp": { "type": "number" },
+        "stars": { "type": "number" },
+        "streak": { "type": "number" },
+        "role": { "type": "string", "enum": ["student", "tutor", "admin"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["accessCode", "displayName", "educationStage", "gradeCode", "role"]
+    },
+    "StudentProgress": {
+      "title": "StudentProgress",
+      "description": "Mastery and unlocked level progress per student and competency",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string", "maxLength": 128 },
+        "subjectId": { "type": "string", "maxLength": 32 },
+        "competencyId": { "type": "string", "maxLength": 64 },
+        "levelId": { "type": "string", "maxLength": 64 },
+        "status": { "type": "string", "enum": ["LOCKED", "AVAILABLE", "IN_PROGRESS", "MASTERED"] },
+        "masteryScore": { "type": "number" },
+        "bestAccuracy": { "type": "number" },
+        "attemptCount": { "type": "number" },
+        "lastPracticedAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["studentId", "subjectId", "levelId", "status"]
+    },
+    "GameSession": {
+      "title": "GameSession",
+      "description": "A single gameplay learning session record",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string", "maxLength": 128 },
+        "subjectId": { "type": "string", "maxLength": 32 },
+        "competencyId": { "type": "string", "maxLength": 64 },
+        "levelId": { "type": "string", "maxLength": 64 },
+        "gameMode": { "type": "string", "maxLength": 32 },
+        "status": { "type": "string", "enum": ["IN_PROGRESS", "COMPLETED", "ABANDONED"] },
+        "score": { "type": "number" },
+        "accuracy": { "type": "number" },
+        "masteryScore": { "type": "number" },
+        "xpEarned": { "type": "number" },
+        "starsEarned": { "type": "number" },
+        "adaptiveDecision": { "type": "string", "maxLength": 64 },
+        "adaptiveReason": { "type": "string", "maxLength": 256 },
+        "startedAt": { "type": "string" },
+        "completedAt": { "type": "string" }
+      },
+      "required": ["studentId", "subjectId", "levelId", "status", "startedAt"]
+    },
+    "AnswerAttempt": {
+      "title": "AnswerAttempt",
+      "description": "Record of a single question answer attempt during a session",
+      "type": "object",
+      "properties": {
+        "sessionId": { "type": "string", "maxLength": 128 },
+        "studentId": { "type": "string", "maxLength": 128 },
+        "questionId": { "type": "string", "maxLength": 64 },
+        "isCorrect": { "type": "boolean" },
+        "responseTimeMs": { "type": "number" },
+        "hintUsed": { "type": "boolean" },
+        "submittedAt": { "type": "string" }
+      },
+      "required": ["sessionId", "studentId", "questionId", "isCorrect"]
+    }
+  },
+  "firestore": {
+    "/students/{studentId}": {
+      "schema": { "$ref": "#/entities/Student" },
+      "description": "Student user profiles and game stats"
+    },
+    "/student_progress/{progressId}": {
+      "schema": { "$ref": "#/entities/StudentProgress" },
+      "description": "Mastery and level unlock states"
+    },
+    "/game_sessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/GameSession" },
+      "description": "Game session histories and results"
+    },
+    "/answer_attempts/{attemptId}": {
+      "schema": { "$ref": "#/entities/AnswerAttempt" },
+      "description": "Granular answer attempts"
+    }
+  }
+}

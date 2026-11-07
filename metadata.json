@@ -1,0 +1,6 @@
+{
+  "name": "Rumbela Games - Adaptive Learning Platform",
+  "description": "Platform permainan belajar adaptif level-based interaktif untuk anak dengan penyesuaian tingkat kesulitan real-time, visual 3D Three.js, dan pemantauan performa akurat.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
